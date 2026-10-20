@@ -12,6 +12,7 @@ BUILDDIR=${BUILDDIR:-/work/build}
 export TEMPLATECONF="$RPI_REF/yocto/meta-rpi-ref/conf/templates/default"
 cd "$RPI_REF/yocto/poky" || exit 1
 # oe-init-build-env prints a banner on stdout; errors still reach stderr.
+# shellcheck source=/dev/null  # exists only inside the container
 . ./oe-init-build-env "$BUILDDIR" >/dev/null || exit 1
 
 [ $# -gt 0 ] || set -- bash
