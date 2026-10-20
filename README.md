@@ -11,7 +11,7 @@ starting point for either build system.
 | BSP | meta-raspberrypi, `scarthgap` branch | in-tree |
 | Machine / defconfig | `MACHINE = "raspberrypi4-64"` | `raspberrypi4_64_defconfig` |
 | Default target | `core-image-minimal` | `make` |
-| Container image | `rpi-ref-yocto:scarthgap` | `rpi-ref-buildroot:2026.02` |
+| Container image | `docker.io/fpgartktic/rpi-ref-yocto:scarthgap` | `docker.io/fpgartktic/rpi-ref-buildroot:2026.02` |
 
 All upstream sources are git submodules pinned to a commit.
 
@@ -20,6 +20,7 @@ All upstream sources are git submodules pinned to a commit.
 ```
 containers/yocto/        Containerfile + entrypoint (Ubuntu 24.04, Yocto host packages)
 containers/buildroot/    Containerfile + entrypoint (Ubuntu 24.04, Buildroot host packages)
+scripts/                 run.sh, build-image.sh, push-images.sh (+ common.sh: names and defaults)
 yocto/poky/              submodule
 yocto/meta-raspberrypi/  submodule
 yocto/meta-rpi-ref/      this design: build templates + failure-scenario recipes
@@ -33,14 +34,22 @@ buildroot/external/      BR2_EXTERNAL tree: failure-scenario package
 git clone --recursive https://github.com/FPGArtktic/rpi-yocto-buildroot-ref.git
 cd rpi-yocto-buildroot-ref
 
-podman build -t rpi-ref-yocto:scarthgap     containers/yocto
-podman build -t rpi-ref-buildroot:2026.02   containers/buildroot
+scripts/run.sh yocto bitbake core-image-minimal
+scripts/run.sh buildroot make raspberrypi4_64_defconfig
+scripts/run.sh buildroot make
+scripts/run.sh yocto                      # interactive shell in the initialised build directory
 ```
 
-The images expect two mounts:
+`scripts/run.sh <yocto|buildroot> [command...]` runs the command in the build container with whichever runtime
+the machine has. It tries `podman`, `apptainer`, `singularity` and `docker`, in that order; set `CTR_RUNTIME=` to
+force one. On first use it pulls the image, or builds it from `containers/<flavour>/Containerfile` if the pull
+fails. For Apptainer or Singularity it creates a `.sif`.
 
-- `/ref`: this checkout. It can be mounted read-only, because nothing is written into the source tree.
-- `/work`: where build trees and caches go.
+Every runtime gets the same two mounts:
+
+- `/ref`: this checkout, mounted read-only. Nothing is written into the source tree.
+- `/work`: `$RPI_REF_WORK`, which defaults to this checkout. Build trees and caches go here, and all of them are
+  git-ignored.
 
 | Path under `/work` | Contents |
 |---|---|
@@ -48,29 +57,23 @@ The images expect two mounts:
 | `downloads/`, `sstate-cache/` | Yocto `DL_DIR` and `SSTATE_DIR` |
 | `output/` | Buildroot `O=` directory with `BR2_EXTERNAL` registered on first run |
 | `dl/` | Buildroot `BR2_DL_DIR` |
+| `yocto.sif`, `buildroot.sif` | Apptainer/Singularity images |
 
-The entrypoint sets up the build environment and runs its arguments. With no arguments it starts a shell.
+Because the paths are the same everywhere, a build started under one runtime can continue under another. Images are
+written to `build/tmp/deploy/images/raspberrypi4-64/` (Yocto) and `output/images/` (Buildroot).
 
-```bash
-mkdir -p ../rpi-work
-RUN="podman run --rm -it --userns=keep-id -v $PWD:/ref:ro -v $PWD/../rpi-work:/work"
+| Script | Does |
+|---|---|
+| `scripts/run.sh <flavour> [cmd...]` | run a command (default: a shell) in the build container |
+| `scripts/build-image.sh <flavour> [runtime]` | (re)build the image from the Containerfile; for Apptainer/Singularity also convert it to `.sif` |
+| `scripts/push-images.sh [podman\|docker]` | build both images from a clean `containers/` and push them |
 
-$RUN rpi-ref-yocto:scarthgap bitbake core-image-minimal
-$RUN rpi-ref-buildroot:2026.02 make raspberrypi4_64_defconfig
-$RUN rpi-ref-buildroot:2026.02 make
-```
+Defaults live in `scripts/common.sh`: `IMAGE_YOCTO`, `IMAGE_BUILDROOT`, `SIF_YOCTO`, `SIF_BUILDROOT`,
+`RPI_REF_WORK`, `CTR_RUNTIME`. The per-runtime details are already handled by `run.sh`:
 
-Use `--userns=keep-id` with rootless Podman, because BitBake refuses to run as root. With Docker, use
-`--user "$(id -u):$(id -g)"` instead. To run under Apptainer, convert the image first. This path has not been
-tested here.
-
-```bash
-podman save --format oci-archive -o yocto.tar rpi-ref-yocto:scarthgap
-apptainer build yocto.sif oci-archive://yocto.tar
-apptainer run --bind $PWD:/ref,$PWD/../rpi-work:/work yocto.sif bitbake core-image-minimal   # run = through the entrypoint
-```
-
-Images are written to `build/tmp/deploy/images/raspberrypi4-64/` (Yocto) and `output/images/` (Buildroot).
+- rootless Podman runs with `--userns=keep-id`, because BitBake refuses to run as root;
+- Docker runs with `--user $(id -u):$(id -g)`;
+- Apptainer/Singularity use `run --cleanenv`, so the image's entrypoint sets up the build environment.
 
 ## Failure scenarios
 
