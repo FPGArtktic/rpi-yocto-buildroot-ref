@@ -1,0 +1,6 @@
+config BR2_PACKAGE_RTK_FAIL_COMPILE
+	bool "rtk-fail-compile"
+	help
+	  C program that does not compile, on purpose. Build it with
+	  `make rtk-fail-compile` to capture the output of a failing
+	  package build. Never enable it in a real configuration.

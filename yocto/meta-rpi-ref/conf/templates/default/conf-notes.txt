@@ -1,0 +1,8 @@
+
+Common targets are:
+    core-image-minimal
+    core-image-base
+
+Failure scenarios (built on purpose to capture error output):
+    rtk-fail-compile     compile error in a C source
+    rtk-fetch-fail       SRC_URI that can never be fetched

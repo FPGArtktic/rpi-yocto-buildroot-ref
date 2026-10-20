@@ -1,0 +1,20 @@
+# Build host for Yocto 5.0 (scarthgap). Host package list: poky/documentation/poky.yaml.in
+# (UBUNTU_DEBIAN_HOST_PACKAGES_ESSENTIAL); liblz4-tool is a transitional package on 24.04, so lz4 is used.
+FROM docker.io/library/ubuntu:24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential chrpath cpio debianutils diffstat file gawk gcc git iputils-ping \
+        libacl1 lz4 locales python3 python3-git python3-jinja2 python3-pexpect python3-pip \
+        python3-subunit socat texinfo unzip wget xz-utils zstd \
+        bzip2 ca-certificates \
+    && locale-gen en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1
+
+COPY entrypoint.sh /usr/local/bin/rpi-ref-entrypoint
+ENTRYPOINT ["/usr/local/bin/rpi-ref-entrypoint"]

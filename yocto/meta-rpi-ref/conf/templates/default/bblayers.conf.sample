@@ -1,0 +1,15 @@
+# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+POKY_BBLAYERS_CONF_VERSION = "2"
+
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+
+# ##OEROOT## is yocto/poky; the other layers sit next to it.
+BBLAYERS ?= " \
+  ##OEROOT##/meta \
+  ##OEROOT##/meta-poky \
+  ##OEROOT##/meta-yocto-bsp \
+  ##OEROOT##/../meta-raspberrypi \
+  ##OEROOT##/../meta-rpi-ref \
+  "

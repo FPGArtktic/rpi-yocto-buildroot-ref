@@ -1,0 +1,16 @@
+# Build host for Buildroot 2026.02 LTS. Mandatory host packages: buildroot/docs/manual/prerequisite.adoc,
+# plus libncurses-dev for menuconfig and git/ca-certificates for git and https downloads.
+FROM docker.io/library/ubuntu:24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        debianutils sed make binutils build-essential diffutils gcc g++ bash patch gzip bzip2 \
+        perl tar cpio unzip rsync file bc findutils gawk wget \
+        python3 xz-utils git ca-certificates libncurses-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=C.UTF-8
+
+COPY entrypoint.sh /usr/local/bin/rpi-ref-entrypoint
+ENTRYPOINT ["/usr/local/bin/rpi-ref-entrypoint"]

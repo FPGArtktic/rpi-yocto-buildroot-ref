@@ -1,0 +1,1 @@
+source "$BR2_EXTERNAL_RPI_REF_PATH/package/rtk-fail-compile/Config.in"

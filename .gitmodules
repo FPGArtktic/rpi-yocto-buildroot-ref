@@ -1,0 +1,9 @@
+[submodule "yocto/poky"]
+	path = yocto/poky
+	url = https://git.yoctoproject.org/poky
+[submodule "yocto/meta-raspberrypi"]
+	path = yocto/meta-raspberrypi
+	url = https://github.com/agherzan/meta-raspberrypi
+[submodule "buildroot/buildroot"]
+	path = buildroot/buildroot
+	url = https://gitlab.com/buildroot.org/buildroot.git

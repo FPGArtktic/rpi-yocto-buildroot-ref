@@ -1,0 +1,1 @@
+Raspberry Pi 4 (64-bit) reference build on Poky (scarthgap), from meta-rpi-ref.

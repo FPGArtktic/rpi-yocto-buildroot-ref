@@ -1,0 +1,12 @@
+# Build trees and caches (when /work is this checkout)
+build/
+tmp/
+output/
+dl/
+downloads/
+sstate-cache/
+*.sif
+
+# Agent instructions are never committed
+CLAUDE.md
+.claude/
